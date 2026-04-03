@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>FisioSalas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #f5f5f0; --surface: #ffffff; --surface2: #f0efea; --surface3: #e8e7e2;
+  --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+  --text: #1a1a18; --text2: #5a5a56; --text3: #9a9a96;
+  --blue: #185FA5; --blue-bg: #E6F1FB; --blue-tx: #0C447C;
+  --green: #3B6D11; --green-bg: #EAF3DE; --green-tx: #27500A;
+  --red: #A32D2D; --red-bg: #FCEBEB; --red-tx: #791F1F;
+  --sala1: #B5D4F4; --sala2: #C0DD97; --sala3: #FAC775; --sala4: #F4C0D1;
+  --radius: 10px; --radius-sm: 6px;
+}
+[data-theme="dark"] {
+  --bg: #161614; --surface: #1e1e1c; --surface2: #272725; --surface3: #313130;
+  --border: rgba(255,255,255,0.09); --border2: rgba(255,255,255,0.16);
+  --text: #f0f0ec; --text2: #a0a09c; --text3: #666662;
+  --blue: #378ADD; --blue-bg: #0c2a4a; --blue-tx: #85B7EB;
+  --green: #639922; --green-bg: #1a2e08; --green-tx: #97C459;
+  --red: #E24B4A; --red-bg: #3a1515; --red-tx: #F09595;
+  --sala1: #1a3a5c; --sala2: #1e3a08; --sala3: #3a2a08; --sala4: #3a1428;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;min-height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;}
+button,input,select{font-family:inherit;}
+
+.app{max-width:960px;margin:0 auto;padding:12px;}
+.header{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;box-shadow:var(--shadow);}
+.logo-row{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:38px;height:38px;background:var(--blue-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:20px;height:20px;stroke:var(--blue-tx);fill:none;stroke-width:2;}
+.app-title{font-size:17px;font-weight:600;}
+.tabs{display:flex;gap:3px;background:var(--surface2);padding:3px;border-radius:6px;}
+.tab{padding:6px 12px;border-radius:5px;border:none;background:transparent;font-size:13px;color:var(--text2);cursor:pointer;}
+.tab.active{background:var(--surface);color:var(--text);font-weight:500;border:1px solid var(--border);}
+.btn-green,.btn-blue{padding:8px 14px;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;}
+.btn-green{background:var(--green);}
+.btn-blue{background:var(--blue);}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px;}
+.stat-card{background:var(--surface2);border-radius:6px;padding:12px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.sched{width:100%;border-collapse:collapse;font-size:13px;}
+.sched th{background:var(--surface2);padding:8px;text-align:center;font-weight:500;border-bottom:1px solid var(--border);}
+.sched td{padding:6px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:top;min-height:52px;position:relative;}
+.td-time{background:var(--surface2);font-weight:500;width:68px;text-align:right;padding-right:8px;}
+.slot-free{min-height:50px;border:2px dashed var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--text3);cursor:pointer;font-size:12px;}
+.slot-free:hover{border-color:var(--blue);background:var(--blue-bg);}
+.slot-booked{border-radius:6px;padding:6px 8px;cursor:pointer;min-height:50px;font-size:12.5px;position:relative;}
+.slot-name{font-weight:600;}
+.slot-info{font-size:11px;opacity:0.9;}
+.delete-btn{position:absolute;top:4px;right:4px;background:var(--red);color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;display:none;}
+.slot-booked:hover .delete-btn{display:block;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;padding:16px;}
+.overlay.open{display:flex;}
+.big-panel{background:var(--surface);border-radius:10px;border:1px solid var(--border);width:100%;max-width:460px;box-shadow:0 8px 32px rgba(0,0,0,.2);overflow:hidden;}
+.big-top{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+.close-btn{background:none;border:none;font-size:22px;color:var(--text2);cursor:pointer;}
+.form-control{width:100%;padding:10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);margin-bottom:10px;}
+.conflict-msg{color:var(--red);font-size:13px;margin:8px 0;display:none;}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <div class="header">
+    <div class="logo-row">
+      <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div><div class="app-title">FisioSalas</div><div class="app-sub">Controle de distribuição de salas</div></div>
+    </div>
+    <div class="header-actions">
+      <div class="tabs">
+        <button class="tab active" id="tab-dia" onclick="setView('dia')">Dia</button>
+        <button class="tab" id="tab-semana" onclick="setView('semana')">Semana</button>
+        <button class="tab" id="tab-lista" onclick="setView('lista')">Lista</button>
+      </div>
+      <button class="btn-green" onclick="openProfs()">Profissionais</button>
+      <button class="btn-blue" onclick="openAdmin()">Admin</button>
+      <button class="btn-green" onclick="openNewModal()">+ Reserva</button>
+      <button onclick="toggleTheme()" title="Alternar tema">🌗</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title" id="view-title">Agenda do Dia</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="navPrev()">←</button>
+        <div id="cur-period" style="min-width:180px;text-align:center;font-weight:500;">—</div>
+        <button onclick="navNext()">→</button>
+        <button onclick="goToday()">Hoje</button>
+      </div>
+    </div>
+    <div id="main-view"></div>
+  </div>
+</div>
+
+<!-- PROFISSIONAIS OVERLAY -->
+<div class="overlay" id="profs-overlay" onclick="if(event.target===this)closeProfs()">
+  <div class="big-panel">
+    <div class="big-top">
+      <div><b>Gestão de Profissionais</b></div>
+      <button class="close-btn" onclick="closeProfs()">✕</button>
+    </div>
+    <div class="big-body" id="profs-body" style="padding:20px;"></div>
+  </div>
+</div>
+
+<!-- ADMIN OVERLAY -->
+<div class="overlay" id="admin-overlay" onclick="if(event.target===this)closeAdmin()">
+  <div class="big-panel">
+    <div class="big-top">
+      <div><b>Painel Administrativo</b></div>
+      <button class="close-btn" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="big-body" id="admin-body" style="padding:20px;"></div>
+  </div>
+</div>
+
+<!-- MODAL DE RESERVA -->
+<div class="overlay" id="book-modal" onclick="if(event.target===this)closeBookModal()">
+  <div class="big-panel">
+    <div class="big-top">
+      <div><b id="book-title">Nova Reserva</b></div>
+      <button class="close-btn" onclick="closeBookModal()">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <select id="f-prof" class="form-control"></select>
+      <select id="f-sala" class="form-control"></select>
+      <select id="f-tipo" class="form-control" onchange="updateBookFields()">
+        <option value="hora">Por hora específica</option>
+        <option value="manha">Manhã (07h–12h)</option>
+        <option value="tarde">Tarde (13h–19h)</option>
+        <option value="dia">Dia inteiro</option>
+      </select>
+      <input type="date" id="f-date" class="form-control">
+      
+      <div id="hour-group">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:12px;color:var(--text2);">Hora Início</label>
+            <select id="f-h-start" class="form-control"></select>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text2);">Hora Fim</label>
+            <select id="f-h-end" class="form-control"></select>
+          </div>
+        </div>
+      </div>
+
+      <input type="text" id="f-obs" class="form-control" placeholder="Observação (opcional)">
+
+      <div id="conflict-msg" class="conflict-msg">⚠️ Conflito de horário nesta sala!</div>
+
+      <div class="btn-row">
+        <button onclick="closeBookModal()">Cancelar</button>
+        <button onclick="saveBooking()" class="btn-green">Salvar Reserva</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SENHA PARA EXCLUSÃO -->
+<div class="overlay" id="delete-pw-modal" onclick="if(event.target===this)closeDeletePwModal()">
+  <div class="big-panel" style="max-width:380px;">
+    <div class="big-top">
+      <div><b>Confirmar Exclusão</b></div>
+      <button class="close-btn" onclick="closeDeletePwModal()">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <p style="margin-bottom:15px;">Digite a senha de administrador para excluir esta reserva:</p>
+      <input type="password" id="delete-pw-input" class="form-control" placeholder="Senha" onkeydown="if(event.key==='Enter') checkDeletePassword()">
+      <div id="delete-pw-error" style="color:var(--red);font-size:13px;margin-top:8px;display:none;">Senha incorreta. Você não tem permissão para excluir reservas.</div>
+      
+      <div class="btn-row" style="margin-top:20px;">
+        <button onclick="closeDeletePwModal()">Cancelar</button>
+        <button onclick="checkDeletePassword()" class="btn-blue">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const ADMIN_PASSWORD = 'Pfisio1234#';
+let bookingToDelete = null;
+
+// ===================== SAFE STORAGE =====================
+let storageEnabled = true;
+function safeSave(key, data) { if(storageEnabled) try{localStorage.setItem(key, JSON.stringify(data));}catch(e){storageEnabled=false;} }
+function safeLoad(key, defaultValue) { 
+  if(!storageEnabled) return defaultValue;
+  try{ const item=localStorage.getItem(key); return item?JSON.parse(item):defaultValue; }catch(e){storageEnabled=false;return defaultValue;}
+}
+
+// ===================== STATE =====================
+let bookings = [];
+let profissionais = ['Ana Lima','Bruno Souza','Carla Neto','Diego Faria','Elena Costa'];
+let currentView = 'dia';
+let currentDate = new Date();
+let isDark = false;
+let editingId = null;
+
+// ===================== CONSTANTS =====================
+const SALAS = ['Sala 1','Sala 2','Sala 3','Sala 4'];
+const SALA_COLORS = ['#B5D4F4','#C0DD97','#FAC775','#F4C0D1'];
+const HOURS = [7,8,9,10,11,12,13,14,15,16,17,18];
+const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+// ===================== LOAD / SAVE =====================
+function loadData() {
+  profissionais = safeLoad('fisio_profs', profissionais);
+  bookings = safeLoad('fisio_bookings', bookings);
+  isDark = safeLoad('fisio_theme', false);
+}
+function saveData() {
+  safeSave('fisio_profs', profissionais);
+  safeSave('fisio_bookings', bookings);
+  safeSave('fisio_theme', isDark);
+}
+
+// ===================== THEME =====================
+function applyTheme() { document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light'); }
+function toggleTheme() { isDark = !isDark; applyTheme(); saveData(); }
+
+// ===================== UTILS =====================
+function dk(d) { return d.toISOString().slice(0,10); }
+function fmtD(d) { return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
+function addD(d,n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function isSun(d) { return d.getDay() === 0; }
+function weekStart(d) { const w = d.getDay(); return addD(d, w===0 ? -6 : 1-w); }
+
+// ===================== STATS =====================
+function updateStats() {
+  const todayBookings = bookings.filter(b => b.date === dk(currentDate)).length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div style="font-size:11px;color:var(--text3);">Profissionais</div><div style="font-size:26px;font-weight:600;">${profissionais.length}</div></div>
+    <div class="stat-card"><div style="font-size:11px;color:var(--text3);">Reservas Hoje</div><div style="font-size:26px;font-weight:600;">${todayBookings}</div></div>
+  `;
+}
+
+// ===================== PROFISSIONAIS =====================
+function openProfs() {
+  document.getElementById('profs-overlay').classList.add('open');
+  renderProfs();
+}
+function closeProfs() { document.getElementById('profs-overlay').classList.remove('open'); }
+
+function renderProfs() {
+  let html = `<div style="background:var(--green-bg);padding:16px;border-radius:8px;margin-bottom:20px;">
+    <strong>+ Novo Profissional</strong><br><br>
+    <input id="new-prof-input" placeholder="Nome completo" style="width:100%;padding:10px;border:1px solid var(--green);border-radius:6px;margin-bottom:8px;">
+    <button onclick="addProf()" style="width:100%;padding:10px;background:var(--green);color:white;border:none;border-radius:6px;">Adicionar</button>
+  </div><strong>Profissionais (${profissionais.length})</strong>`;
+
+  profissionais.forEach((p,i) => {
+    html += `<div style="display:flex;justify-content:space-between;padding:12px;background:var(--surface2);margin:8px 0;border-radius:8px;">
+      <span>${p}</span><button onclick="removeProf(${i})" style="color:var(--red);">Remover</button>
+    </div>`;
+  });
+  document.getElementById('profs-body').innerHTML = html;
+}
+
+function addProf() {
+  const nome = document.getElementById('new-prof-input').value.trim();
+  if (!nome || nome.length < 3) return alert("Nome inválido");
+  if (profissionais.some(p => p.toLowerCase() === nome.toLowerCase())) return alert("Já cadastrado");
+  profissionais.push(nome);
+  saveData();
+  renderProfs();
+  updateStats();
+}
+
+function removeProf(i) {
+  if (confirm(`Remover ${profissionais[i]}?`)) {
+    profissionais.splice(i,1);
+    saveData();
+    renderProfs();
+    updateStats();
+  }
+}
+
+// ===================== ADMIN =====================
+function openAdmin() {
+  document.getElementById('admin-overlay').classList.add('open');
+  document.getElementById('admin-body').innerHTML = `
+    <div style="padding:20px;">
+      <h3>Painel Administrativo</h3>
+      <p><strong>Profissionais:</strong> ${profissionais.length}</p>
+      <p><strong>Total de reservas:</strong> ${bookings.length}</p>
+    </div>`;
+}
+function closeAdmin() {
+  document.getElementById('admin-overlay').classList.remove('open');
+}
+
+// ===================== EXCLUSÃO COM SENHA =====================
+function requestDeleteWithPassword(id) {
+  bookingToDelete = id;
+  document.getElementById('delete-pw-input').value = '';
+  document.getElementById('delete-pw-error').style.display = 'none';
+  document.getElementById('delete-pw-modal').classList.add('open');
+  setTimeout(() => document.getElementById('delete-pw-input').focus(), 100);
+}
+
+function closeDeletePwModal() {
+  document.getElementById('delete-pw-modal').classList.remove('open');
+  bookingToDelete = null;
+}
+
+function checkDeletePassword() {
+  const pw = document.getElementById('delete-pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    if (bookingToDelete) {
+      bookings = bookings.filter(b => b.id !== bookingToDelete);
+      saveData();
+      updateStats();
+      render();
+      alert("Reserva excluída com sucesso.");
+    }
+    closeDeletePwModal();
+  } else {
+    document.getElementById('delete-pw-error').style.display = 'block';
+    document.getElementById('delete-pw-input').value = '';
+    document.getElementById('delete-pw-input').focus();
+  }
+}
+
+// ===================== AGENDA DO DIA =====================
+function renderDay() {
+  const today = dk(currentDate);
+  let html = `<div style="overflow-x:auto;"><table class="sched"><thead><tr><th class="td-time">Horário</th>`;
+  
+  SALAS.forEach((s, i) => {
+    html += `<th style="background:${SALA_COLORS[i]};color:#000;">${s}</th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  HOURS.forEach(h => {
+    html += `<tr><td class="td-time">${h}:00</td>`;
+    SALAS.forEach((sala, si) => {
+      const booking = bookings.find(b => b.date === today && b.sala === sala && isHourOccupied(b, h));
+      if (booking) {
+        const color = SALA_COLORS[si];
+        const label = getSlotLabel(booking);
+        html += `<td style="position:relative;">
+          <div class="slot-booked" style="background:${color};" onclick="editBooking('${booking.id}')">
+            <div class="slot-name">${booking.prof}</div>
+            <div class="slot-info">${label}${booking.obs ? ' · ' + booking.obs : ''}</div>
+            <button class="delete-btn" onclick="event.stopImmediatePropagation(); requestDeleteWithPassword('${booking.id}');">×</button>
+          </div>
+        </td>`;
+      } else {
+        html += `<td><div class="slot-free" onclick="openNewModalWithSlot('${today}', ${h}, '${sala}')">Livre</div></td>`;
+      }
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div>`;
+  document.getElementById('main-view').innerHTML = html;
+}
+
+function isHourOccupied(b, h) {
+  if (b.tipo === 'dia') return true;
+  if (b.tipo === 'manha') return h >= 7 && h <= 11;
+  if (b.tipo === 'tarde') return h >= 13 && h <= 18;
+  if (b.tipo === 'hora') return h >= b.hStart && h < b.hEnd;
+  return false;
+}
+
+function getSlotLabel(b) {
+  if (b.tipo === 'hora') return `${b.hStart}h–${b.hEnd}h`;
+  if (b.tipo === 'manha') return 'Manhã';
+  if (b.tipo === 'tarde') return 'Tarde';
+  if (b.tipo === 'dia') return 'Dia inteiro';
+  return '';
+}
+
+// ===================== AGENDA DA SEMANA =====================
+function renderWeek() {
+  const ws = weekStart(currentDate);
+  const days = Array.from({length:6}, (_,i) => addD(ws, i));
+  let html = `<div style="overflow-x:auto;"><table class="sched"><thead><tr><th class="td-time">Sala</th>`;
+  
+  days.forEach(d => {
+    html += `<th>${DAYS_PT[d.getDay()]}<br><small>${fmtD(d)}</small></th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  SALAS.forEach((sala, si) => {
+    html += `<tr><td class="td-time" style="background:${SALA_COLORS[si]};color:#000;">${sala}</td>`;
+    days.forEach(d => {
+      const dateStr = dk(d);
+      const dayBookings = bookings.filter(b => b.date === dateStr && b.sala === sala);
+      
+      if (dayBookings.length > 0) {
+        html += `<td style="padding:4px;">`;
+        dayBookings.forEach(b => {
+          const label = getSlotLabel(b);
+          html += `<div class="slot-booked" style="background:${SALA_COLORS[si]};margin-bottom:4px;position:relative;" onclick="editBooking('${b.id}')">
+            <div class="slot-name">${b.prof}</div>
+            <div class="slot-info">${label}</div>
+            <button class="delete-btn" onclick="event.stopImmediatePropagation(); requestDeleteWithPassword('${b.id}');">×</button>
+          </div>`;
+        });
+        html += `</td>`;
+      } else {
+        html += `<td><div class="slot-free" onclick="openNewModalWithSlot('${dateStr}', 8, '${sala}')">Livre</div></td>`;
+      }
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div>`;
+  document.getElementById('main-view').innerHTML = html;
+}
+
+// ===================== RESERVA =====================
+function openNewModal() {
+  openNewModalWithSlot(dk(currentDate), 8, SALAS[0]);
+}
+
+function openNewModalWithSlot(date, hour, sala) {
+  if (profissionais.length === 0) {
+    alert("Adicione pelo menos um profissional primeiro!");
+    openProfs();
+    return;
+  }
+
+  editingId = null;
+  document.getElementById('book-title').textContent = "Nova Reserva";
+  document.getElementById('book-modal').classList.add('open');
+  document.getElementById('conflict-msg').style.display = 'none';
+
+  document.getElementById('f-prof').innerHTML = profissionais.map(p => `<option>${p}</option>`).join('');
+  document.getElementById('f-sala').innerHTML = SALAS.map(s => `<option value="${s}" ${s===sala?'selected':''}>${s}</option>`).join('');
+
+  document.getElementById('f-date').value = date;
+  document.getElementById('f-tipo').value = 'hora';
+  document.getElementById('f-obs').value = '';
+
+  updateBookFields();
+
+  if (hour !== undefined) {
+    document.getElementById('f-h-start').value = hour;
+    document.getElementById('f-h-end').value = Math.min(hour + 1, 19);
+  }
+}
+
+function updateBookFields() {
+  const tipo = document.getElementById('f-tipo').value;
+  document.getElementById('hour-group').style.display = (tipo === 'hora') ? 'block' : 'none';
+
+  const startSelect = document.getElementById('f-h-start');
+  const endSelect = document.getElementById('f-h-end');
+
+  startSelect.innerHTML = '';
+  endSelect.innerHTML = '';
+
+  [7,8,9,10,11,13,14,15,16,17,18].forEach(h => {
+    let opt = document.createElement('option');
+    opt.value = h;
+    opt.textContent = `${h}:00`;
+    startSelect.appendChild(opt.cloneNode(true));
+    endSelect.appendChild(opt);
+  });
+}
+
+function closeBookModal() {
+  document.getElementById('book-modal').classList.remove('open');
+}
+
+function hasConflict(newB) {
+  return bookings.some(b => {
+    if (b.id === editingId) return false;
+    if (b.sala !== newB.sala || b.date !== newB.date) return false;
+    if (newB.tipo === 'hora' && b.tipo === 'hora') {
+      return !(newB.hEnd <= b.hStart || newB.hStart >= b.hEnd);
+    }
+    return true;
+  });
+}
+
+function saveBooking() {
+  const prof = document.getElementById('f-prof').value;
+  const sala = document.getElementById('f-sala').value;
+  const tipo = document.getElementById('f-tipo').value;
+  const date = document.getElementById('f-date').value;
+  const obs = document.getElementById('f-obs').value.trim();
+
+  let hStart = null, hEnd = null;
+  if (tipo === 'hora') {
+    hStart = parseInt(document.getElementById('f-h-start').value);
+    hEnd = parseInt(document.getElementById('f-h-end').value);
+    if (hEnd <= hStart) return alert("Hora final deve ser maior que a inicial.");
+  }
+
+  const newBooking = { id: editingId || Date.now().toString(), prof, sala, tipo, date, hStart, hEnd, obs };
+
+  if (hasConflict(newBooking)) {
+    document.getElementById('conflict-msg').style.display = 'block';
+    return;
+  }
+
+  if (editingId) bookings = bookings.filter(b => b.id !== editingId);
+  bookings.push(newBooking);
+  saveData();
+  closeBookModal();
+  updateStats();
+  render();
+
+  alert("✅ Reserva salva com sucesso!");
+}
+
+function editBooking(id) {
+  const b = bookings.find(x => x.id === id);
+  if (!b) return;
+
+  editingId = id;
+  document.getElementById('book-title').textContent = "Editar Reserva";
+  document.getElementById('book-modal').classList.add('open');
+  document.getElementById('conflict-msg').style.display = 'none';
+
+  document.getElementById('f-prof').innerHTML = profissionais.map(p => `<option ${p===b.prof?'selected':''}>${p}</option>`).join('');
+  document.getElementById('f-sala').value = b.sala;
+  document.getElementById('f-tipo').value = b.tipo;
+  document.getElementById('f-date').value = b.date;
+  document.getElementById('f-obs').value = b.obs || '';
+
+  updateBookFields();
+  if (b.tipo === 'hora' && b.hStart != null) {
+    document.getElementById('f-h-start').value = b.hStart;
+    document.getElementById('f-h-end').value = b.hEnd;
+  }
+}
+
+// ===================== MAIN =====================
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === `tab-${v}`));
+  document.getElementById('view-title').textContent = v === 'dia' ? 'Agenda do Dia' : v === 'semana' ? 'Agenda da Semana' : 'Lista de Reservas';
+  render();
+}
+
+function navPrev() { 
+  currentDate = addD(currentDate, currentView === 'dia' ? -1 : -7); 
+  if(isSun(currentDate)) currentDate = addD(currentDate, -1); 
+  render(); 
+}
+function navNext() { 
+  currentDate = addD(currentDate, currentView === 'dia' ? 1 : 7); 
+  if(isSun(currentDate)) currentDate = addD(currentDate, 1); 
+  render(); 
+}
+function goToday() { currentDate = new Date(); render(); }
+
+function render() {
+  document.getElementById('cur-period').textContent = currentView === 'dia' 
+    ? fmtD(currentDate) 
+    : `${fmtD(weekStart(currentDate))} – ${fmtD(addD(weekStart(currentDate),5))}`;
+  
+  updateStats();
+  if (currentView === 'dia') renderDay();
+  else if (currentView === 'semana') renderWeek();
+  else document.getElementById('main-view').innerHTML = `<div style="padding:60px;text-align:center;color:var(--text2);">Lista em desenvolvimento</div>`;
+}
+
+// ===================== INIT =====================
+loadData();
+applyTheme();
+if (isSun(currentDate)) currentDate = addD(currentDate, 1);
+render();
+
+console.log("✅ FisioSalas carregado com sucesso - openNewModal corrigido!");
+</script>
+</body>
+</html>
